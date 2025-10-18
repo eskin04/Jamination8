@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class BulletSpawn : MonoBehaviour
@@ -12,6 +13,19 @@ public class BulletSpawn : MonoBehaviour
     void Start()
     {
         timer = spawnInterval;
+        StartCoroutine(IncreasSpawnRateOverTime());
+    }
+
+    private IEnumerator IncreasSpawnRateOverTime()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(15f); // 15 saniyede bir spawn hızı artışı
+            if (spawnInterval > 1.0f) // Minimum interval sınırı
+            {
+                spawnInterval -= 0.5f; // Spawn hızını artır (intervali azalt)
+            }
+        }
     }
 
     // Update is called once per frame

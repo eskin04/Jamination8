@@ -11,7 +11,8 @@ public class RandomIslands : MonoBehaviour
     private int currentIslandIndex = -1;
     private float changeInterval = 4.0f; // Time in seconds between island changes
     private float timer = 4.0f;
-    private int disableIslandIndex = -1;
+    private float bombSpeed = 10f;
+    private float bombArcHeight = 8f;
 
     void Awake()
     {
@@ -31,26 +32,53 @@ public class RandomIslands : MonoBehaviour
         redMaterial = Color.red;
         greenMaterial = Color.green;
         StartCoroutine(IncreasSpeedOverTime());
-
-
+        StartCoroutine(IncreasBombSpeedOverTime());
+        StartCoroutine(IncreasBombArcHeightOverTime());
     }
+
+    private IEnumerator IncreasBombSpeedOverTime()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(15f);
+            if (bombSpeed < 25f) // 15 saniyede bir hız artışı
+                bombSpeed += 2f; // Hızı artır
+        }
+    }
+
+    private IEnumerator IncreasBombArcHeightOverTime()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(15f);
+            if (bombArcHeight < 10f) // 20 saniyede bir yay yüksekliği artışı
+                bombArcHeight += 0.5f; // Yay yüksekliğini artır
+        }
+    }
+
+    public float GetBombSpeed()
+    {
+        return bombSpeed;
+    }
+    public float GetBombArcHeight()
+    {
+        return bombArcHeight;
+    }
+
+
 
     private IEnumerator IncreasSpeedOverTime()
     {
         while (true)
         {
-            yield return new WaitForSeconds(10f); // 30 saniyede bir hız artışı
-            if (changeInterval > 1.0f) // Minimum interval sınırı
+            yield return new WaitForSeconds(15f); // 30 saniyede bir hız artışı
+            if (changeInterval > 2.0f) // Minimum interval sınırı
             {
                 changeInterval -= 0.5f; // Hızı artır (intervali azalt)
             }
         }
     }
 
-    public void DisableRandomIsland(int index)
-    {
-        disableIslandIndex = index;
-    }
 
     // Update is called once per frame
     void Update()
@@ -72,22 +100,23 @@ public class RandomIslands : MonoBehaviour
         do
         {
             newIslandIndex = Random.Range(0, islands.Length);
-        } while (newIslandIndex == currentIslandIndex || newIslandIndex == disableIslandIndex); // Ensure it's different from the current index
+        } while (!islands[newIslandIndex].GetComponent<IslandController>().IsActive()); // Ensure it's different from the current index
 
         islands[newIslandIndex].SetActive(true);
         currentIslandIndex = newIslandIndex;
+        islands[currentIslandIndex].GetComponent<IslandController>().SetIsActive(false);
 
         // Change the material color randomly between red and green
         currentIslandMaterial = islands[currentIslandIndex].GetComponent<Renderer>().material;
         currentIslandMaterial.color = redMaterial;
 
         // Wait for a short duration before changing to green
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(changeInterval / 4);
         islands[currentIslandIndex].SetActive(false);
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(changeInterval / 4);
         currentIslandMaterial.color = greenMaterial;
-
         islands[currentIslandIndex].SetActive(true);
+        islands[currentIslandIndex].GetComponent<IslandController>().SetIsActive(true);
     }
 
 

@@ -3,8 +3,8 @@ using UnityEngine;
 public class GuidedBomb : MonoBehaviour
 {
     private GameObject[] targets;
-    [SerializeField] private float speed = 10f;
-    [SerializeField] private float arcHeight = 8f;
+    private float speed = 10f;
+    private float arcHeight = 8f;
 
     private GameObject target;
     private Transform targetTransform;
@@ -17,17 +17,20 @@ public class GuidedBomb : MonoBehaviour
 
     void Start()
     {
+        speed = RandomIslands.Instance.GetBombSpeed();
+        arcHeight = RandomIslands.Instance.GetBombArcHeight();
         targets = GameObject.FindGameObjectsWithTag("Island");
         do
         {
             targetIndex = Random.Range(0, targets.Length);
             target = targets[targetIndex];
-        } while (!target.activeSelf);
+        } while (!target.GetComponent<IslandController>().IsActive());
+        target.GetComponent<IslandController>().SetIsActive(false);
         targetTransform = target.GetComponent<Transform>();
-        RandomIslands.Instance.DisableRandomIsland(targetIndex);
         target.GetComponent<Renderer>().material.color = Color.yellow;
         startPos = transform.position;
         t = 0;
+
     }
 
     public void SetReturning()
@@ -70,6 +73,7 @@ public class GuidedBomb : MonoBehaviour
             t = 0;
             lastPosition = transform.position;
             target.GetComponent<Renderer>().material.color = Color.green;
+            target.GetComponent<IslandController>().SetIsActive(true);
 
             reversingStarted = true;
         }

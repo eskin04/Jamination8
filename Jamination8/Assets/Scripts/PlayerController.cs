@@ -17,10 +17,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float attackCooldown = 1.0f;
     [SerializeField] private Transform attackPoint;
     [SerializeField] private LayerMask targetLayer;
+
+    [Header("Animation & Effects")]
+    [SerializeField] private Animator animator;
     private float lastAttackTime = 0.0f;
     private bool isGrounded;
     private bool isRotating = false;
     private Rigidbody rb;
+    private bool isGameOver = false;
 
 
 
@@ -35,6 +39,9 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+
+
         PlayerMovement();
         if (!isGrounded && !isRotating) StartCoroutine(ResetRotation());
         if (Input.GetKeyDown(KeyCode.Space))
@@ -74,10 +81,26 @@ public class PlayerController : MonoBehaviour
 
         Vector3 direction = Vector3.zero;
 
-        if (Input.GetKeyDown(KeyCode.W)) direction = Vector3.forward;
-        if (Input.GetKeyDown(KeyCode.S)) direction = Vector3.back;
-        if (Input.GetKeyDown(KeyCode.A)) direction = Vector3.left;
-        if (Input.GetKeyDown(KeyCode.D)) direction = Vector3.right;
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            direction = Vector3.forward;
+            animator.SetTrigger("isJump");
+        }
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            direction = Vector3.back;
+            animator.SetTrigger("isJump");
+        }
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            direction = Vector3.left;
+            animator.SetTrigger("isJump");
+        }
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            direction = Vector3.right;
+            animator.SetTrigger("isJump");
+        }
 
         if (direction != Vector3.zero && isGrounded)
         {
@@ -106,6 +129,7 @@ public class PlayerController : MonoBehaviour
         if (Time.time - lastAttackTime < attackCooldown && !isGrounded) return;
 
         lastAttackTime = Time.time;
+        animator.SetTrigger("isKick");
 
         Collider[] hitColliders = Physics.OverlapSphere(attackPoint.position, attackRange, targetLayer);
         foreach (var hitCollider in hitColliders)
@@ -126,5 +150,16 @@ public class PlayerController : MonoBehaviour
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(attackPoint.position, attackRange);
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("water"))
+        {
+            Debug.Log("Game Over!");
+            isGameOver = true;
+            Time.timeScale = 0f;
+            // Additional game over logic can be added here
+        }
     }
 }
