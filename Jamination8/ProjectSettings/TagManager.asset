@@ -7,6 +7,9 @@ TagManager:
   - Island
   - Bullet
   - water
+  - effect
+  - Monkey
+  - Taverna
   layers:
   - Default
   - TransparentFX

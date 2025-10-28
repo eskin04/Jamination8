@@ -1,16 +1,19 @@
 using System.Collections;
 using UnityEngine;
+using DG.Tweening;
 
 public class RandomIslands : MonoBehaviour
 {
     public static RandomIslands Instance { get; private set; }
+    [SerializeField] private ParticleSystem waterEffect;
+    [SerializeField] private ParticleSystem explosionEffect;
     [SerializeField] private GameObject[] islands;
     private Material currentIslandMaterial;
     private Color redMaterial;
     private Color greenMaterial;
     private int currentIslandIndex = -1;
     private float changeInterval = 4.0f; // Time in seconds between island changes
-    private float timer = 4.0f;
+    private float timer = 2.0f;
     private float bombSpeed = 10f;
     private float bombArcHeight = 8f;
 
@@ -24,7 +27,6 @@ public class RandomIslands : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject); // Sahne değişince yok olmasın
     }
     void Start()
     {
@@ -43,7 +45,10 @@ public class RandomIslands : MonoBehaviour
             yield return new WaitForSeconds(15f);
             if (bombSpeed < 25f) // 15 saniyede bir hız artışı
                 bombSpeed += 2f; // Hızı artır
+            else break;
+
         }
+        yield return null;
     }
 
     private IEnumerator IncreasBombArcHeightOverTime()
@@ -53,7 +58,9 @@ public class RandomIslands : MonoBehaviour
             yield return new WaitForSeconds(15f);
             if (bombArcHeight < 10f) // 20 saniyede bir yay yüksekliği artışı
                 bombArcHeight += 0.5f; // Yay yüksekliğini artır
+            else break;
         }
+        yield return null;
     }
 
     public float GetBombSpeed()
@@ -76,48 +83,84 @@ public class RandomIslands : MonoBehaviour
             {
                 changeInterval -= 0.5f; // Hızı artır (intervali azalt)
             }
+            else
+            {
+                break; // Minimum intervale ulaşıldıysa döngüyü kır
+            }
         }
+        yield return null;
     }
 
 
     // Update is called once per frame
     void Update()
     {
+        if (MonkeyManager.Instance.isGameOver) return;
         timer += Time.deltaTime;
         if (timer >= changeInterval)
         {
-            StartCoroutine(ChangeIsland());
+            ChangeIsland();
             timer = 0.0f;
         }
     }
 
-    private IEnumerator ChangeIsland()
+    private void ChangeIsland()
     {
 
 
         // Select a new random island index
         int newIslandIndex;
+        int step = 0;
         do
         {
+            step++;
             newIslandIndex = Random.Range(0, islands.Length);
-        } while (!islands[newIslandIndex].GetComponent<IslandController>().IsActive()); // Ensure it's different from the current index
-
+            if (step > 20)
+            {
+                // 100 denemeden sonra farklı ada bulunamazsa değişiklik yapma
+                return;
+            }
+        } while (islands[newIslandIndex] == null || !islands[newIslandIndex].GetComponent<IslandController>().IsActive()); // Ensure it's different from the current index
+        if (islands[newIslandIndex] == null)
+            return;
         islands[newIslandIndex].SetActive(true);
         currentIslandIndex = newIslandIndex;
         islands[currentIslandIndex].GetComponent<IslandController>().SetIsActive(false);
 
-        // Change the material color randomly between red and green
-        currentIslandMaterial = islands[currentIslandIndex].GetComponent<Renderer>().material;
-        currentIslandMaterial.color = redMaterial;
+        Transform childTransform = islands[currentIslandIndex].transform.GetChild(0).transform;
 
-        // Wait for a short duration before changing to green
-        yield return new WaitForSeconds(changeInterval / 4);
-        islands[currentIslandIndex].SetActive(false);
-        yield return new WaitForSeconds(changeInterval / 4);
-        currentIslandMaterial.color = greenMaterial;
-        islands[currentIslandIndex].SetActive(true);
-        islands[currentIslandIndex].GetComponent<IslandController>().SetIsActive(true);
+        Sequence seq = DOTween.Sequence();
+
+        seq.Append(childTransform.DOShakePosition(changeInterval / 4, 1, 6, 30, false, true));
+        seq.Append(childTransform.DOMoveY(childTransform.position.y - 2, changeInterval / 6).SetEase(Ease.InElastic));
+        seq.AppendCallback(() =>
+        {
+            waterEffect.transform.position = islands[currentIslandIndex].transform.position - Vector3.up * 1;
+            waterEffect.Play();
+            islands[currentIslandIndex].SetActive(false);
+
+            // Callback işlemleri burada yapılabilir
+        });
+        seq.AppendInterval(changeInterval / 4); // yarım saniye bekle
+
+
+        seq.OnComplete(() =>
+        {
+            islands[newIslandIndex].SetActive(true);
+            islands[currentIslandIndex].GetComponent<IslandController>().SetIsActive(true);
+
+            childTransform.DOMoveY(childTransform.position.y + 2, changeInterval / 6).SetEase(Ease.OutElastic);
+
+        });
     }
 
+    public void ExplodeIsland(Vector3 position)
+    {
+        explosionEffect.transform.position = position - Vector3.up;
+        explosionEffect.Play();
+    }
 
 }
+
+
+
