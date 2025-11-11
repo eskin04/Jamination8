@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class MonkeyManager : MonoBehaviour
 {
@@ -12,6 +13,8 @@ public class MonkeyManager : MonoBehaviour
     [SerializeField] private ParticleSystem debuffEffect;
     [SerializeField] private GameObject buffPanel;
     [SerializeField] private GameObject debuffPanel;
+    [SerializeField] private TextMeshProUGUI buffText;
+    [SerializeField] private TextMeshProUGUI deBuffText;
     private bool isSpawning = false;
     private bool isBuff = false;
     private bool isDebuff = false;
@@ -91,14 +94,24 @@ public class MonkeyManager : MonoBehaviour
 
     private IEnumerator PlayerBuffCoroutine()
     {
-        yield return new WaitForSeconds(5f);
+        int steps = 10;
+        for (int i = 0; i < steps; i++)
+        {
+            buffText.text = (steps - i).ToString();
+            yield return new WaitForSeconds(1f);
+        }
         buffPanel.SetActive(false);
         isBuff = false;
     }
 
     private IEnumerator PlayerDebuffCoroutine()
     {
-        yield return new WaitForSeconds(5f);
+        int steps = 5;
+        for (int i = 0; i < steps; i++)
+        {
+            deBuffText.text = (steps - i).ToString();
+            yield return new WaitForSeconds(1f);
+        }
         debuffPanel.SetActive(false);
         isDebuff = false;
     }
